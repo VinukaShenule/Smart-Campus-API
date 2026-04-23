@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus API</title>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Segoe UI',Arial,sans-serif;background:#0f1117;color:#e2e8f0;min-height:100vh}
+        .topbar{background:#161b27;border-bottom:1px solid #2d3748;padding:0 32px;display:flex;align-items:center;gap:16px;height:56px;position:sticky;top:0;z-index:100}
+        .topbar-logo{font-size:17px;font-weight:700;color:#63b3ed;letter-spacing:-0.3px}
+        .topbar-logo span{color:#68d391}
+        .status-dot{width:8px;height:8px;border-radius:50%;background:#68d391;margin-left:auto;box-shadow:0 0 6px #68d391}
+        .status-text{font-size:12px;color:#68d391}
+        .layout{display:flex;min-height:calc(100vh - 56px)}
+        .sidebar{width:220px;background:#161b27;border-right:1px solid #2d3748;padding:24px 0;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+        .sidebar-section{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#4a5568;padding:0 20px;margin:16px 0 6px}
+        .sidebar-link{display:flex;align-items:center;gap:8px;padding:7px 20px;font-size:13px;color:#a0aec0;cursor:pointer;border-left:2px solid transparent;transition:all 0.15s}
+        .sidebar-link:hover{color:#e2e8f0;background:rgba(255,255,255,0.04)}
+        .sidebar-link.active{color:#63b3ed;border-left-color:#63b3ed;background:rgba(99,179,237,0.07)}
+        .sb-badge{font-size:10px;padding:1px 5px;border-radius:3px;font-weight:600;color:white}
+        .sb-get{background:#276749}.sb-post{background:#7b341e}.sb-del{background:#742a2a}
+        .main{flex:1;padding:32px;max-width:860px}
+        .hero{margin-bottom:28px}
+        .hero h1{font-size:26px;font-weight:700;color:#f7fafc;margin-bottom:8px}
+        .hero p{font-size:14px;color:#718096}
+        .base-url-box{background:#1a202c;border:1px solid #2d3748;border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:12px;margin:16px 0 20px}
+        .base-url-box .lbl{font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:#4a5568;flex-shrink:0}
+        .base-url-box code{font-family:Consolas,monospace;font-size:14px;color:#63b3ed;flex:1}
+        .copy-url-btn{background:transparent;border:1px solid #2d3748;color:#718096;padding:4px 10px;border-radius:5px;cursor:pointer;font-size:11px}
+        .copy-url-btn:hover{border-color:#63b3ed;color:#63b3ed}
+        .note-box{background:rgba(246,173,85,0.08);border:1px solid rgba(246,173,85,0.25);border-radius:6px;padding:10px 14px;font-size:13px;color:#f6ad55;margin-bottom:28px}
+        .section-head{display:flex;align-items:center;gap:10px;margin:36px 0 14px;padding-bottom:10px;border-bottom:1px solid #2d3748}
+        .section-head h2{font-size:16px;font-weight:600;color:#e2e8f0}
+        .section-num{width:24px;height:24px;border-radius:50%;background:#2d3748;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#a0aec0;flex-shrink:0}
+        .ep-card{background:#1a202c;border:1px solid #2d3748;border-radius:10px;margin-bottom:12px;overflow:hidden;transition:border-color 0.15s}
+        .ep-card:hover{border-color:#4a5568}
+        .ep-card.open{border-color:#3d5a80}
+        .ep-header{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none}
+        .ep-header:hover{background:rgba(255,255,255,0.02)}
+        .m-badge{font-family:Consolas,monospace;font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px;min-width:58px;text-align:center;letter-spacing:0.3px}
+        .m-get{background:rgba(72,187,120,0.15);color:#68d391;border:1px solid rgba(72,187,120,0.3)}
+        .m-post{background:rgba(246,173,85,0.12);color:#f6ad55;border:1px solid rgba(246,173,85,0.25)}
+        .m-del{background:rgba(252,129,74,0.12);color:#fc8059;border:1px solid rgba(252,129,74,0.25)}
+        .ep-path{font-family:Consolas,monospace;font-size:14px;color:#e2e8f0;flex:1}
+        .ep-title{font-size:13px;color:#718096}
+        .ep-arrow{color:#4a5568;font-size:11px;transition:transform 0.2s}
+        .ep-card.open .ep-arrow{transform:rotate(90deg)}
+        .ep-body{padding:0 18px 18px;display:none;border-top:1px solid #2d3748}
+        .ep-card.open .ep-body{display:block}
+        .rl{font-size:11px;text-transform:uppercase;letter-spacing:0.7px;color:#4a5568;margin:14px 0 6px}
+        .json-box{background:#0f1117;border:1px solid #2d3748;border-radius:6px;padding:12px 14px;font-family:Consolas,monospace;font-size:12.5px;color:#a8dadc;white-space:pre;overflow-x:auto;line-height:1.6;margin-bottom:6px}
+        .steps-ol{padding-left:18px;font-size:13px;line-height:2;color:#a0aec0}
+        .steps-ol li{padding-left:4px}
+        .steps-ol code{font-family:Consolas,monospace;font-size:12px;background:#0f1117;padding:1px 5px;border-radius:3px;color:#63b3ed;border:1px solid #2d3748}
+        .steps-ol strong{color:#e2e8f0;font-weight:600}
+        .resp-box{display:flex;flex-direction:column;gap:4px;margin:10px 0}
+        .resp-row{display:flex;align-items:center;gap:10px;padding:5px 10px;border-radius:5px;background:rgba(255,255,255,0.02);font-size:12px}
+        .rc{font-family:Consolas,monospace;font-size:11px;font-weight:700;padding:2px 7px;border-radius:3px;min-width:38px;text-align:center}
+        .rc200,.rc201{background:rgba(72,187,120,0.15);color:#68d391}
+        .rc400,.rc404{background:rgba(252,129,74,0.15);color:#fc8059}
+        .rc403{background:rgba(252,129,74,0.15);color:#fc8059}
+        .rc409{background:rgba(252,129,74,0.15);color:#fc8059}
+        .rc422{background:rgba(252,129,74,0.15);color:#fc8059}
+        .resp-desc{color:#718096}
+        .copy-btn{background:#2d3748;border:1px solid #4a5568;color:#a0aec0;padding:5px 14px;border-radius:5px;cursor:pointer;font-size:12px;width:100%;margin-top:6px}
+        .copy-btn:hover{background:#3d4a5c;color:#e2e8f0}
+        .order-table{width:100%;border-collapse:collapse;font-size:13px;background:#1a202c;border-radius:8px;overflow:hidden;border:1px solid #2d3748}
+        .order-table th{background:#2d3748;color:#a0aec0;padding:10px 14px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.5px}
+        .order-table td{padding:9px 14px;border-bottom:1px solid #0f1117;color:#a0aec0;font-family:Consolas,monospace;font-size:12px}
+        .order-table td:first-child{color:#4a5568;font-family:'Segoe UI',sans-serif;text-align:center;font-weight:700}
+        .order-table td:last-child{font-family:'Segoe UI',sans-serif}
+        .order-table tr:last-child td{border-bottom:none}
+        .order-table tr:hover td{background:rgba(255,255,255,0.02)}
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <span class="topbar-logo">Smart<span>Campus</span> API</span>
+    <span style="font-size:12px;color:#4a5568;">Jersey 2.47 · Tomcat 9 · JAX-RS</span>
+    <div class="status-dot" id="sdot"></div>
+    <span class="status-text" id="stext">checking...</span>
+</div>
+
+<div class="layout">
+<div class="sidebar">
+    <div class="sidebar-section">Overview</div>
+    <div class="sidebar-link active" onclick="goTo('overview',this)">Base URL</div>
+    <div class="sidebar-link" onclick="goTo('order',this)">Testing order</div>
+    <div class="sidebar-section">Discovery</div>
+    <div class="sidebar-link" onclick="goTo('s-discovery',this)"><span class="sb-badge sb-get">GET</span>/api/v1/</div>
+    <div class="sidebar-section">Rooms</div>
+    <div class="sidebar-link" onclick="goTo('s-rooms',this)"><span class="sb-badge sb-get">GET</span>/rooms</div>
+    <div class="sidebar-link" onclick="goTo('s-rooms',this)"><span class="sb-badge sb-get">GET</span>/rooms/{id}</div>
+    <div class="sidebar-link" onclick="goTo('s-rooms',this)"><span class="sb-badge sb-post">POST</span>/rooms</div>
+    <div class="sidebar-link" onclick="goTo('s-rooms',this)"><span class="sb-badge sb-del">DEL</span>/rooms/{id}</div>
+    <div class="sidebar-section">Sensors</div>
+    <div class="sidebar-link" onclick="goTo('s-sensors',this)"><span class="sb-badge sb-get">GET</span>/sensors</div>
+    <div class="sidebar-link" onclick="goTo('s-sensors',this)"><span class="sb-badge sb-post">POST</span>/sensors</div>
+    <div class="sidebar-section">Readings</div>
+    <div class="sidebar-link" onclick="goTo('s-readings',this)"><span class="sb-badge sb-get">GET</span>readings</div>
+    <div class="sidebar-link" onclick="goTo('s-readings',this)"><span class="sb-badge sb-post">POST</span>readings</div>
+    <div class="sidebar-section">Error Cases</div>
+    <div class="sidebar-link" onclick="goTo('s-errors',this)">422 · 403 · 409 · 404</div>
+</div>
+
+<div class="main">
+    <div class="hero" id="overview">
+        <h1>Smart Campus API</h1>
+        <p>REST API for managing campus rooms and IoT sensors — built with JAX-RS (Jersey 2.x) on Apache Tomcat 9.</p>
+    </div>
+
+    <div class="base-url-box">
+        <span class="lbl">Base URL</span>
+        <code>http://localhost:8080/Smart-Campus-API/api/v1</code>
+        <button class="copy-url-btn" onclick="cpText('http://localhost:8080/Smart-Campus-API/api/v1',this)">Copy</button>
+    </div>
+
+    <div class="note-box">
+        Data is stored <strong>in-memory</strong> — resets on every Tomcat restart. Always: <strong>1</strong> POST room → <strong>2</strong> POST sensor → <strong>3</strong> POST reading.
+    </div>
+
+    <div class="section-head" id="order">
+        <div class="section-num">★</div>
+        <h2>Recommended Postman testing order</h2>
+    </div>
+    <table class="order-table">
+        <thead><tr><th>#</th><th>Method</th><th>URL</th><th>Expected</th></tr></thead>
+        <tbody>
+            <tr><td>1</td><td><span class="m-badge m-get">GET</span></td><td>/api/v1/</td><td>200 discovery</td></tr>
+            <tr><td>2</td><td><span class="m-badge m-post">POST</span></td><td>/api/v1/rooms</td><td>201 created</td></tr>
+            <tr><td>3</td><td><span class="m-badge m-get">GET</span></td><td>/api/v1/rooms</td><td>200 list</td></tr>
+            <tr><td>4</td><td><span class="m-badge m-get">GET</span></td><td>/api/v1/rooms/1</td><td>200 by id</td></tr>
+            <tr><td>5</td><td><span class="m-badge m-post">POST</span></td><td>/api/v1/sensors</td><td>201 created</td></tr>
+            <tr><td>6</td><td><span class="m-badge m-get">GET</span></td><td>/api/v1/sensors</td><td>200 list</td></tr>
+            <tr><td>7</td><td><span class="m-badge m-get">GET</span></td><td>/api/v1/sensors?type=temperature</td><td>200 filtered</td></tr>
+            <tr><td>8</td><td><span class="m-badge m-post">POST</span></td><td>/api/v1/sensors/S1/readings</td><td>201 saved</td></tr>
+            <tr><td>9</td><td><span class="m-badge m-get">GET</span></td><td>/api/v1/sensors/S1/readings</td><td>200 list</td></tr>
+            <tr><td>10</td><td><span class="m-badge m-post">POST</span></td><td>/api/v1/sensors (bad roomId)</td><td>422</td></tr>
+            <tr><td>11</td><td><span class="m-badge m-post">POST</span></td><td>/api/v1/sensors (MAINTENANCE)</td><td>201</td></tr>
+            <tr><td>12</td><td><span class="m-badge m-post">POST</span></td><td>/api/v1/sensors/S3/readings</td><td>403</td></tr>
+            <tr><td>13</td><td><span class="m-badge m-del">DELETE</span></td><td>/api/v1/rooms/1 (has sensors)</td><td>409</td></tr>
+        </tbody>
+    </table>
+
+    <!-- DISCOVERY -->
+    <div class="section-head" id="s-discovery"><div class="section-num">1</div><h2>Discovery</h2></div>
+    <div class="ep-card" id="c-disc">
+        <div class="ep-header" onclick="tog('c-disc')">
+            <span class="m-badge m-get">GET</span><span class="ep-path">/api/v1/</span>
+            <span class="ep-title">Discovery — API metadata &amp; links</span><span class="ep-arrow">▶</span>
+        </div>
+        <div class="ep-body">
+            <div class="rl">Full URL</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/</div>
+            <div class="rl">Postman steps</div>
+            <ol class="steps-ol">
+                <li>Method: <strong>GET</strong></li>
+                <li>URL: <code>http://localhost:8080/Smart-Campus-API/api/v1/</code></li>
+                <li>No body needed — click <strong>Send</strong></li>
+            </ol>
+            <div class="rl">Expected responses</div>
+            <div class="resp-box"><div class="resp-row"><span class="rc rc200">200</span><span class="resp-desc">JSON with version, contact, resource links</span></div></div>
+        </div>
+    </div>
+
+    <!-- ROOMS -->
+    <div class="section-head" id="s-rooms"><div class="section-num">2</div><h2>Rooms</h2></div>
+
+    <div class="ep-card" id="c-get-rooms">
+        <div class="ep-header" onclick="tog('c-get-rooms')">
+            <span class="m-badge m-get">GET</span><span class="ep-path">/api/v1/rooms</span>
+            <span class="ep-title">List all rooms</span><span class="ep-arrow">▶</span>
+        </div>
+        <div class="ep-body">
+            <div class="rl">Full URL</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/rooms</div>
+            <div class="rl">Postman steps</div>
+            <ol class="steps-ol">
+                <li>Method: <strong>GET</strong> — no body</li>
+                <li>URL: <code>http://localhost:8080/Smart-Campus-API/api/v1/rooms</code></li>
+                <li>Click <strong>Send</strong></li>
+            </ol>
+            <div class="resp-box"><div class="resp-row"><span class="rc rc200">200</span><span class="resp-desc">JSON array of all rooms ([] if none)</span></div></div>
+        </div>
+    </div>
+
+    <div class="ep-card" id="c-get-room-id">
+        <div class="ep-header" onclick="tog('c-get-room-id')">
+            <span class="m-badge m-get">GET</span><span class="ep-path">/api/v1/rooms/{id}</span>
+            <span class="ep-title">Get room by ID</span><span class="ep-arrow">▶</span>
+        </div>
+        <div class="ep-body">
+            <div class="rl">Full URL (replace 1 with your room id)</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/rooms/1</div>
+            <div class="rl">Postman steps</div>
+            <ol class="steps-ol">
+                <li>Method: <strong>GET</strong> — no body</li>
+                <li>URL: <code>http://localhost:8080/Smart-Campus-API/api/v1/rooms/1</code></li>
+                <li>Click <strong>Send</strong></li>
+            </ol>
+            <div class="resp-box">
+                <div class="resp-row"><span class="rc rc200">200</span><span class="resp-desc">Room object — id, name, capacity, sensorIds</span></div>
+                <div class="resp-row"><span class="rc rc404">404</span><span class="resp-desc">Room not found — JSON error body</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ep-card" id="c-post-room">
+        <div class="ep-header" onclick="tog('c-post-room')">
+            <span class="m-badge m-post">POST</span><span class="ep-path">/api/v1/rooms</span>
+            <span class="ep-title">Create a room</span><span class="ep-arrow">▶</span>
+        </div>
+        <div class="ep-body">
+            <div class="rl">Full URL</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/rooms</div>
+            <div class="rl">Postman steps</div>
+            <ol class="steps-ol">
+                <li>Method: <strong>POST</strong></li>
+                <li>URL: <code>http://localhost:8080/Smart-Campus-API/api/v1/rooms</code></li>
+                <li><strong>Body</strong> tab → <strong>raw</strong> → dropdown: <strong>JSON</strong></li>
+                <li>Paste the raw JSON body below → click <strong>Send</strong></li>
+            </ol>
+            <div class="rl">Raw JSON body</div>
+            <div class="json-box" id="j-post-room">{
+  "id": "1",
+  "name": "Lab A",
+  "capacity": 40,
+  "sensorIds": []
+}</div>
+            <button class="copy-btn" onclick="cpEl('j-post-room',this)">Copy JSON body</button>
+            <div class="resp-box" style="margin-top:10px">
+                <div class="resp-row"><span class="rc rc201">201</span><span class="resp-desc">Room created — returns full room object</span></div>
+                <div class="resp-row"><span class="rc rc409">409</span><span class="resp-desc">Conflict — room id already exists</span></div>
+                <div class="resp-row"><span class="rc rc400">400</span><span class="resp-desc">Bad Request — id field missing</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ep-card" id="c-del-room">
+        <div class="ep-header" onclick="tog('c-del-room')">
+            <span class="m-badge m-del">DELETE</span><span class="ep-path">/api/v1/rooms/{id}</span>
+            <span class="ep-title">Delete room (fails if sensors assigned)</span><span class="ep-arrow">▶</span>
+        </div>
+        <div class="ep-body">
+            <div class="rl">Full URL (replace 1 with your room id)</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/rooms/1</div>
+            <div class="rl">Postman steps</div>
+            <ol class="steps-ol">
+                <li>Method: <strong>DELETE</strong> — no body</li>
+                <li>URL: <code>http://localhost:8080/Smart-Campus-API/api/v1/rooms/1</code></li>
+                <li>Click <strong>Send</strong></li>
+            </ol>
+            <div class="resp-box">
+                <div class="resp-row"><span class="rc rc200">200</span><span class="resp-desc">Room deleted successfully</span></div>
+                <div class="resp-row"><span class="rc rc409">409</span><span class="resp-desc">Conflict — room still has sensors assigned</span></div>
+                <div class="resp-row"><span class="rc rc404">404</span><span class="resp-desc">Room not found</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SENSORS -->
+    <div class="section-head" id="s-sensors"><div class="section-num">3</div><h2>Sensors</h2></div>
+
+    <div class="ep-card" id="c-get-sensors">
+        <div class="ep-header" onclick="tog('c-get-sensors')">
+            <span class="m-badge m-get">GET</span><span class="ep-path">/api/v1/sensors</span>
+            <span class="ep-title">List all sensors (optional ?type= filter)</span><span class="ep-arrow">▶</span>
+        </div>
+        <div class="ep-body">
+            <div class="rl">All sensors</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/sensors</div>
+            <div class="rl">Filtered by type</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/sensors?type=temperature</div>
+            <div class="rl">Postman steps (with filter)</div>
+            <ol class="steps-ol">
+                <li>Method: <strong>GET</strong></li>
+                <li>URL: <code>http://localhost:8080/Smart-Campus-API/api/v1/sensors</code></li>
+                <li>Click <strong>Params</strong> → KEY: <code>type</code> VALUE: <code>temperature</code></li>
+                <li>Click <strong>Send</strong></li>
+            </ol>
+            <div class="resp-box"><div class="resp-row"><span class="rc rc200">200</span><span class="resp-desc">JSON array — all sensors or filtered</span></div></div>
+        </div>
+    </div>
+
+    <div class="ep-card" id="c-post-sensor">
+        <div class="ep-header" onclick="tog('c-post-sensor')">
+            <span class="m-badge m-post">POST</span><span class="ep-path">/api/v1/sensors</span>
+            <span class="ep-title">Register a sensor</span><span class="ep-arrow">▶</span>
+        </div>
+        <div class="ep-body">
+            <div class="rl">Full URL</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/sensors</div>
+            <div class="rl">Postman steps</div>
+            <ol class="steps-ol">
+                <li>Method: <strong>POST</strong></li>
+                <li>URL: <code>http://localhost:8080/Smart-Campus-API/api/v1/sensors</code></li>
+                <li><strong>Body</strong> → <strong>raw</strong> → <strong>JSON</strong></li>
+                <li>Paste JSON body below → click <strong>Send</strong></li>
+                <li>Room id <code>"1"</code> must exist first — run POST /rooms first</li>
+            </ol>
+            <div class="rl">Raw JSON body — ACTIVE sensor</div>
+            <div class="json-box" id="j-post-sensor">{
+  "id": "S1",
+  "type": "temperature",
+  "status": "ACTIVE",
+  "currentValue": 0,
+  "roomId": "1"
+}</div>
+            <button class="copy-btn" onclick="cpEl('j-post-sensor',this)">Copy JSON body</button>
+            <div class="rl">Raw JSON body — MAINTENANCE sensor</div>
+            <div class="json-box" id="j-post-sensor-m">{
+  "id": "S3",
+  "type": "temperature",
+  "status": "MAINTENANCE",
+  "currentValue": 0,
+  "roomId": "1"
+}</div>
+            <button class="copy-btn" onclick="cpEl('j-post-sensor-m',this)">Copy JSON body</button>
+            <div class="resp-box" style="margin-top:10px">
+                <div class="resp-row"><span class="rc rc201">201</span><span class="resp-desc">Sensor created and linked to room</span></div>
+                <div class="resp-row"><span class="rc rc422">422</span><span class="resp-desc">Unprocessable — roomId does not exist</span></div>
+                <div class="resp-row"><span class="rc rc409">409</span><span class="resp-desc">Conflict — sensor id already exists</span></div>
+                <div class="resp-row"><span class="rc rc400">400</span><span class="resp-desc">Bad Request — id field missing</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- READINGS -->
+    <div class="section-head" id="s-readings"><div class="section-num">4</div><h2>Sensor Readings (sub-resource)</h2></div>
+
+    <div class="ep-card" id="c-get-readings">
+        <div class="ep-header" onclick="tog('c-get-readings')">
+            <span class="m-badge m-get">GET</span><span class="ep-path">/api/v1/sensors/{id}/readings</span>
+            <span class="ep-title">Get readings for a sensor</span><span class="ep-arrow">▶</span>
+        </div>
+        <div class="ep-body">
+            <div class="rl">Full URL (replace S1 with sensor id)</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/sensors/S1/readings</div>
+            <div class="rl">Postman steps</div>
+            <ol class="steps-ol">
+                <li>Method: <strong>GET</strong> — no body</li>
+                <li>URL: <code>http://localhost:8080/Smart-Campus-API/api/v1/sensors/S1/readings</code></li>
+                <li>Click <strong>Send</strong></li>
+            </ol>
+            <div class="resp-box">
+                <div class="resp-row"><span class="rc rc200">200</span><span class="resp-desc">JSON array of all readings for that sensor</span></div>
+                <div class="resp-row"><span class="rc rc404">404</span><span class="resp-desc">Sensor not found</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ep-card" id="c-post-reading">
+        <div class="ep-header" onclick="tog('c-post-reading')">
+            <span class="m-badge m-post">POST</span><span class="ep-path">/api/v1/sensors/{id}/readings</span>
+            <span class="ep-title">Add a reading (403 if MAINTENANCE)</span><span class="ep-arrow">▶</span>
+        </div>
+        <div class="ep-body">
+            <div class="rl">Full URL (replace S1 with sensor id)</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/sensors/S1/readings</div>
+            <div class="rl">Postman steps</div>
+            <ol class="steps-ol">
+                <li>Method: <strong>POST</strong></li>
+                <li>URL: <code>http://localhost:8080/Smart-Campus-API/api/v1/sensors/S1/readings</code></li>
+                <li><strong>Body</strong> → <strong>raw</strong> → <strong>JSON</strong></li>
+                <li>Paste JSON body below → click <strong>Send</strong></li>
+                <li>After 201: GET <code>/sensors/S1</code> → currentValue will update to 26.5</li>
+            </ol>
+            <div class="rl">Raw JSON body</div>
+            <div class="json-box" id="j-post-reading">{
+  "id": "R1",
+  "timestamp": 1713780000,
+  "value": 26.5
+}</div>
+            <button class="copy-btn" onclick="cpEl('j-post-reading',this)">Copy JSON body</button>
+            <div class="resp-box" style="margin-top:10px">
+                <div class="resp-row"><span class="rc rc201">201</span><span class="resp-desc">Reading saved — sensor currentValue updates to 26.5</span></div>
+                <div class="resp-row"><span class="rc rc403">403</span><span class="resp-desc">Forbidden — sensor is in MAINTENANCE mode</span></div>
+                <div class="resp-row"><span class="rc rc404">404</span><span class="resp-desc">Sensor not found</span></div>
+                <div class="resp-row"><span class="rc rc400">400</span><span class="resp-desc">Bad Request — reading id missing</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ERROR CASES -->
+    <div class="section-head" id="s-errors"><div class="section-num">5</div><h2>Error case tests</h2></div>
+
+    <div class="ep-card" id="c-err422">
+        <div class="ep-header" onclick="tog('c-err422')">
+            <span class="m-badge m-post">POST</span><span class="ep-path">/api/v1/sensors</span>
+            <span class="ep-title">Invalid roomId → expect 422</span><span class="ep-arrow">▶</span>
+        </div>
+        <div class="ep-body">
+            <div class="rl">Full URL</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/sensors</div>
+            <div class="rl">Raw JSON body (roomId 999 does not exist)</div>
+            <div class="json-box" id="j-err422">{
+  "id": "S2",
+  "type": "humidity",
+  "status": "ACTIVE",
+  "currentValue": 0,
+  "roomId": "999"
+}</div>
+            <button class="copy-btn" onclick="cpEl('j-err422',this)">Copy JSON body</button>
+            <div class="resp-box" style="margin-top:10px">
+                <div class="resp-row"><span class="rc rc422">422</span><span class="resp-desc">Unprocessable Entity — roomId does not reference an existing room</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ep-card" id="c-err403">
+        <div class="ep-header" onclick="tog('c-err403')">
+            <span class="m-badge m-post">POST</span><span class="ep-path">/api/v1/sensors/S3/readings</span>
+            <span class="ep-title">MAINTENANCE sensor reading → expect 403</span><span class="ep-arrow">▶</span>
+        </div>
+        <div class="ep-body">
+            <div class="rl">Step A — create maintenance sensor first (POST /sensors)</div>
+            <div class="json-box" id="j-err403s">{
+  "id": "S3",
+  "type": "temperature",
+  "status": "MAINTENANCE",
+  "currentValue": 0,
+  "roomId": "1"
+}</div>
+            <button class="copy-btn" onclick="cpEl('j-err403s',this)">Copy sensor JSON</button>
+            <div class="rl">Step B — POST a reading to S3</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/sensors/S3/readings</div>
+            <div class="json-box" id="j-err403r">{
+  "id": "R2",
+  "timestamp": 1713780000,
+  "value": 30.2
+}</div>
+            <button class="copy-btn" onclick="cpEl('j-err403r',this)">Copy reading JSON</button>
+            <div class="resp-box" style="margin-top:10px">
+                <div class="resp-row"><span class="rc rc403">403</span><span class="resp-desc">Forbidden — sensor in MAINTENANCE cannot accept readings</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ep-card" id="c-err409">
+        <div class="ep-header" onclick="tog('c-err409')">
+            <span class="m-badge m-del">DELETE</span><span class="ep-path">/api/v1/rooms/1</span>
+            <span class="ep-title">Delete room with sensors → expect 409</span><span class="ep-arrow">▶</span>
+        </div>
+        <div class="ep-body">
+            <div class="rl">Full URL</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/rooms/1</div>
+            <div class="rl">Postman steps</div>
+            <ol class="steps-ol">
+                <li>Make sure room 1 has sensor S1 assigned (steps 2 + 5 first)</li>
+                <li>Method: <strong>DELETE</strong> — no body</li>
+                <li>URL: <code>http://localhost:8080/Smart-Campus-API/api/v1/rooms/1</code> → click <strong>Send</strong></li>
+            </ol>
+            <div class="resp-box" style="margin-top:10px">
+                <div class="resp-row"><span class="rc rc409">409</span><span class="resp-desc">Conflict — room still has active sensors assigned</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ep-card" id="c-err404">
+        <div class="ep-header" onclick="tog('c-err404')">
+            <span class="m-badge m-get">GET</span><span class="ep-path">/api/v1/rooms/GHOST</span>
+            <span class="ep-title">Non-existent resource → expect 404</span><span class="ep-arrow">▶</span>
+        </div>
+        <div class="ep-body">
+            <div class="rl">Full URL</div>
+            <div class="json-box">http://localhost:8080/Smart-Campus-API/api/v1/rooms/GHOST</div>
+            <div class="rl">Postman steps</div>
+            <ol class="steps-ol">
+                <li>Method: <strong>GET</strong> — no body</li>
+                <li>URL: <code>http://localhost:8080/Smart-Campus-API/api/v1/rooms/GHOST</code> → click <strong>Send</strong></li>
+            </ol>
+            <div class="resp-box" style="margin-top:10px">
+                <div class="resp-row"><span class="rc rc404">404</span><span class="resp-desc">Not Found — JSON error body with message</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div style="height:60px"></div>
+</div>
+</div>
+
+<script>
+function tog(id){document.getElementById(id).classList.toggle('open');}
+function cpEl(id,btn){
+    navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>{
+        btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy JSON body',1600);
+    });
+}
+function cpText(t,btn){
+    navigator.clipboard.writeText(t).then(()=>{btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy',1600);});
+}
+function goTo(id,el){
+    document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
+    document.querySelectorAll('.sidebar-link').forEach(l=>l.classList.remove('active'));
+    el.classList.add('active');
+}
+fetch('api/v1/').then(r=>{
+    if(r.ok){
+        document.getElementById('sdot').style.cssText='width:8px;height:8px;border-radius:50%;background:#68d391;box-shadow:0 0 6px #68d391;margin-left:auto';
+        document.getElementById('stext').textContent='API online';
+        document.getElementById('stext').style.color='#68d391';
+    }else{offline();}
+}).catch(offline);
+function offline(){
+    document.getElementById('sdot').style.cssText='width:8px;height:8px;border-radius:50%;background:#fc8059;box-shadow:0 0 6px #fc8059;margin-left:auto';
+    document.getElementById('stext').textContent='API offline';
+    document.getElementById('stext').style.color='#fc8059';
+}
+document.querySelectorAll('.ep-card').forEach(c=>c.classList.add('open'));
+</script>
+</body>
+</html>
