@@ -211,3 +211,6 @@ Exposing stack traces to external API consumers is a significant security risk: 
 ### Part 5.5 — JAX-RS Filters for Cross-Cutting Concerns
 
 Using a `ContainerRequestFilter` / `ContainerResponseFilter` for logging is superior to `Logger.info()` inside every resource method because: (1) **DRY principle** — logging logic defined once, (2) **Separation of concerns** — resource methods focus on business logic, (3) **Consistency** — every request/response is logged uniformly, (4) **Maintainability** — changing log format requires editing one class, (5) Filters can be registered/deregistered globally without touching business code.
+
+
+This is my Demonstrastion Video Link : https://drive.google.com/file/d/1O7r6nd-xoMOzw6boK-K0kadAjN97PEHY/view?usp=drive_link
